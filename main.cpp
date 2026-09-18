@@ -34,6 +34,10 @@ private:
             if (!key->isAutoRepeat()) player.toggle();
             return true;
         }
+        if ((key->key() == Qt::Key_BracketLeft || key->key() == Qt::Key_BracketRight) && player.bookId()) {
+            if (!key->isAutoRepeat()) player.skip(key->key() == Qt::Key_BracketLeft ? -30 : 30);
+            return true;
+        }
         return false;
     }
     QQuickWindow &window;
@@ -43,7 +47,8 @@ private:
 int smoke(Library &, Player &, const QStringList &);
 void menuSmoke(QQuickWindow &, Library &, Player &, const QString &);
 void appearanceSmoke(QQuickWindow &, Library &, Player &, Theme &, const QString &);
-void seekSliderSmoke(QQuickWindow &, Library &, Player &);
+void seekSliderSmoke(QQuickWindow &, Library &, Player &, const QString &);
+void skipKeysSmoke(QQuickWindow &, Library &, Player &);
 void browseShortcutsSmoke(QQuickWindow &, Library &, Player &, const QString &);
 int main(int argc, char **argv) {
     qputenv("QT_FFMPEG_PROTOCOL_WHITELIST", "file,crypto,data");
@@ -236,7 +241,8 @@ int main(int argc, char **argv) {
                     QCoreApplication::sendEvent(window, &backspace);
                     require(window->property("selectedBook").toInt() == 0 && grid->hasActiveFocus()
                         && window->property("focusedBook") == detailsId && !player.playing(), "Backspace must return to the selected book without changing playback");
-                    seekSliderSmoke(*window, library, player);
+                    seekSliderSmoke(*window, library, player, args.value(2));
+                    skipKeysSmoke(*window, library, player);
                     menuSmoke(*window, library, player, args.value(2) + ".menu.png");
                     theme.setMode("Light");
                     require(theme.background.lightness() > 128, "light theme");

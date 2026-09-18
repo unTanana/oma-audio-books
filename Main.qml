@@ -434,13 +434,59 @@ ApplicationWindow {
             Layout.fillWidth: true; from: 0; to: Math.max(1, player.duration)
             enabled: player.bookId > 0; Accessible.name: "Seek within current file"
             property real seekTarget: 0
+            // Separate IDs keep playback/save notifications from rebuilding chapter delegates.
+            readonly property int chapterBook: player.bookId
+            readonly property int chapterTrack: player.trackId
+            readonly property var chapters: {
+                window.chapterRevision
+                if (!chapterBook || to <= 1) return []
+                const starts = new Set()
+                return library.chapters(chapterBook).filter(c => {
+                    const keep = c.track === chapterTrack && c.start >= 0 && c.start < to && !starts.has(c.start)
+                    if (keep) starts.add(c.start)
+                    return keep
+                }).sort((a, b) => a.start - b.start)
+            }
+            function chapterAt(position) {
+                for (let i = chapters.length - 1; i >= 0; --i)
+                    if (position >= chapters[i].start) return chapters[i].title || "Chapter"
+                return ""
+            }
+            readonly property real hoverFraction: Math.max(0, Math.min(1,
+                (timelineHover.point.position.x - leftPadding - handle.width / 2) / Math.max(1, availableWidth - handle.width)))
+            readonly property real previewPosition: pressed ? value : valueAt(mirrored ? 1 - hoverFraction : hoverFraction)
+            readonly property string previewChapter: chapterAt(previewPosition)
+            Accessible.description: chapterAt(value)
             Binding on value { value: player.position; when: !seekSlider.pressed; restoreMode: Binding.RestoreNone }
             onMoved: { seekTarget = value; if (!pressed) player.seek(seekTarget) }
             onPressedChanged: { if (pressed) seekTarget = value; else player.seek(seekTarget) }
+            // Align the rail, dividers and hover time with the native handle's travel.
+            Binding { target: seekSlider.background; property: "x"; value: seekSlider.leftPadding + seekSlider.handle.width / 2 }
+            Binding { target: seekSlider.background; property: "width"; value: Math.max(1, seekSlider.availableWidth - seekSlider.handle.width) }
+            Repeater {
+                parent: seekSlider.background
+                objectName: "chapterMarkers"; model: seekSlider.chapters
+                Rectangle {
+                    required property var modelData
+                    visible: modelData.start > 0
+                    x: modelData.start / seekSlider.to * parent.width - width / 2
+                    width: 2; height: parent.height; color: theme.background
+                }
+            }
+            HoverHandler { id: timelineHover; enabled: seekSlider.enabled }
+            ToolTip {
+                id: chapterToolTip; objectName: "chapterToolTip"
+                visible: seekSlider.enabled && seekSlider.to > 1 && (timelineHover.hovered || seekSlider.pressed)
+                text: (seekSlider.previewChapter ? seekSlider.previewChapter + "\n" : "") + time(seekSlider.previewPosition)
+                width: Math.min(implicitWidth, 360, seekSlider.width)
+                x: Math.max(0, Math.min(seekSlider.width - width,
+                    (seekSlider.pressed ? seekSlider.handle.x + seekSlider.handle.width / 2 : timelineHover.point.position.x) - width / 2))
+                contentItem: PlainLabel { text: chapterToolTip.text; wrapMode: Text.Wrap }
+            }
         }
         RowLayout {
             Button { text: "|‹"; Layout.preferredWidth: 44; enabled: player.bookId > 0; onClicked: player.previous(); Accessible.name: "Previous chapter" }
-            Button { text: "−30"; Layout.preferredWidth: 54; enabled: player.bookId > 0; onClicked: player.skip(-30); Accessible.name: "Back 30 seconds" }
+            Button { text: "−30"; Layout.preferredWidth: 54; enabled: player.bookId > 0; onClicked: player.skip(-30); Accessible.name: "Back 30 seconds"; ToolTip.visible: hovered; ToolTip.text: "Back 30 seconds ([)" }
             Button {
                 id: playButton; objectName: "playButton"; Layout.preferredWidth: 74
                 text: player.playing ? "Pause" : "Play"; display: AbstractButton.IconOnly
@@ -453,7 +499,7 @@ ApplicationWindow {
                 Accessible.name: text
                 ToolTip.visible: hovered; ToolTip.text: text + " (Space)"
             }
-            Button { text: "+30"; Layout.preferredWidth: 54; enabled: player.bookId > 0; onClicked: player.skip(30); Accessible.name: "Forward 30 seconds" }
+            Button { text: "+30"; Layout.preferredWidth: 54; enabled: player.bookId > 0; onClicked: player.skip(30); Accessible.name: "Forward 30 seconds"; ToolTip.visible: hovered; ToolTip.text: "Forward 30 seconds (])" }
             Button { text: "›|"; Layout.preferredWidth: 44; enabled: player.bookId > 0; onClicked: player.next(); Accessible.name: "Next chapter" }
             Button { text: "Bookmark"; Layout.preferredWidth: 92; enabled: player.bookId > 0; onClicked: bookmarkDialog.open() }
             Item { Layout.fillWidth: true }
@@ -464,7 +510,7 @@ ApplicationWindow {
             PlainLabel { text: "Sleep" }
             ThemedComboBox { id: sleepSelect; model: ["Off", "15 minutes", "30 minutes", "60 minutes", "End of chapter"]; onActivated: player.sleep([0, 15, 30, 60, -1][currentIndex]); Accessible.name: "Sleep timer" }
             PlainLabel { text: player.sleepLabel; Layout.fillWidth: true }
-            PlainLabel { text: selectedBook ? "Backspace back · Space play/pause · Ctrl+F search" : "Enter play/pause · Ctrl+Enter details · Ctrl+F search\nCtrl+1–4 filters · Ctrl+Tab cycle · Alt+S sort"; horizontalAlignment: Text.AlignRight; font.pixelSize: 11 }
+            PlainLabel { text: selectedBook ? "Backspace back · Space play/pause · [ / ] skip 30s\nCtrl+F search" : "Enter play/pause · Ctrl+Enter details · [ / ] skip 30s\nCtrl+F search · Ctrl+1–4 filters · Ctrl+Tab cycle · Alt+S sort"; horizontalAlignment: Text.AlignRight; font.pixelSize: 11 }
         }
     }
     Connections {

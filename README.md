@@ -93,13 +93,17 @@ remaining time accounts for speed. Previous/next navigate chapters or files;
 end. Restart restores the last selection paused. Closing saves and exits.
 Dragging the seek bar previews the position and seeks once on release; arrow keys
 commit on key release. Playback ticks do not move the thumb during a drag.
+Chapter dividers mark the current file's embedded chapters. Hover or drag along
+the timeline to see the chapter name and timestamp. Files without embedded chapters
+keep an uninterrupted timeline; changing files updates the markers automatically.
 
 Keyboard: Ctrl+F search, arrows browse, Enter play/pause the highlighted book,
 Ctrl+Enter open its details, Backspace/Escape return to the library, Tab through
-controls. Space toggles the current player's playback across the main window;
-holding Space or Enter does not toggle repeatedly. Search and other text inputs
+controls. Space toggles the current player's playback across the main window.
+**[** skips back 30 seconds; **]** skips forward 30 seconds, including across files.
+Holding Space, Enter or the skip keys does not repeat the action. Search and other text inputs
 retain normal Space entry and Backspace deletion,
-and dialogs/menus keep their own key handling. Menu or Shift+F10 opens the focused
+brackets remain ordinary text, and dialogs/menus keep their own key handling. Menu or Shift+F10 opens the focused
 book's menu; arrows, Enter/Space and Escape operate it.
 
 In the library, Ctrl+1 selects All, Ctrl+2 In progress, Ctrl+3 Finished and Ctrl+4

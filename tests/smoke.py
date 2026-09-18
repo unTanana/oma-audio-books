@@ -84,6 +84,12 @@ with tempfile.TemporaryDirectory(prefix="oma-audio-books-synthetic-") as tmp:
     (library / "outside-link").symlink_to(outside, target_is_directory=True)
     (library / "cycle").symlink_to(library, target_is_directory=True)
     run(executable, "--smoke", "layouts", str(library), env=env, timeout=30)
+    keyboard_book = library / "Synthetic keyboard book"
+    keyboard_book.mkdir()
+    for number in (1, 2):
+        run("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=45",
+            "-metadata", "album=Synthetic keyboard book", "-metadata", "artist=Synthetic Author",
+            "-y", str(keyboard_book / f"{number}.mp3"))
     theme = base / "state/omarchy/current/theme/colors.toml"
     theme.write_text('background = "#060b1e"\nforeground = "#ffcead"\naccent = "#7d82d9"\n')
     for shown in ("false", "true"):

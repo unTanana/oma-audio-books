@@ -151,6 +151,11 @@ This project is licensed under MIT. Omakade inspired the desktop direction; no O
 - Integrated persistent bottom player while navigating the library.
 - Play/pause, seek, backward/forward skip, volume, and playback speed.
 - Default skip interval: 30 seconds; avoid a preferences page solely for this value.
+- Unmodified `[` / `]` skip back/forward 30 seconds across file boundaries. Preserve
+  text entry and modal key handling; ignore key repeat.
+- The current-file seek bar shows embedded chapter boundaries and a plain-text
+  chapter/time preview on hover or drag. Reuse the native slider and its keyboard
+  behavior; commit once on release. Playback saves do not rebuild the chapter model.
 - Ordered transitions between book files and navigation between embedded chapters.
 - Remember current book, track, offset, and playback speed across restarts.
 - Restore the last selection paused; never autoplay merely because the app starts.

@@ -79,11 +79,28 @@ void browseShortcutsSmoke(QQuickWindow &window, Library &lib, Player &player, co
     fprintf(stdout, "PASS: direct/cycling filters and wrapping, repeat guard, Alt+S sorting/persistence, text/dialog/details guards and shortcut labels\n");
 }
 
-void seekSliderSmoke(QQuickWindow &window, Library &lib, Player &player) {
+void seekSliderSmoke(QQuickWindow &window, Library &lib, Player &player, const QString &screenshot) {
     auto slider = window.findChild<QQuickItem *>("seekSlider");
     require(slider && player.media.isSeekable() && player.duration() > 0 && !player.playing(), "seek slider setup");
+    auto markers = window.findChild<QObject *>("chapterMarkers"), tooltip = window.findChild<QObject *>("chapterToolTip");
+    require(markers && tooltip, "seek timeline lacks chapter markers and preview");
+    const int originalBook = player.bookId(), originalTrack = player.trackId();
     const auto saved = player.position();
-    auto focus = window.activeFocusItem();
+    QPointer<QQuickItem> focus = window.activeFocusItem();
+    auto q = lib.sql("SELECT book_id,id,probe FROM tracks WHERE json_array_length(probe,'$.chapters')=2 ORDER BY book_id LIMIT 1");
+    require(q.next(), "synthetic chaptered track");
+    const int book = q.value(0).toInt(), track = q.value(1).toInt();
+    const auto probe = q.value(2);
+    player.open(book, false);
+    require(waitFor([&] { return player.media.isSeekable() && markers->property("count").toInt() == 2; }), "chapter markers did not follow playback");
+    auto marker = [&](int index) {
+        QQuickItem *item = nullptr;
+        require(QMetaObject::invokeMethod(markers, "itemAt", Q_RETURN_ARG(QQuickItem *, item), Q_ARG(int, index)), "chapter divider lookup");
+        return item;
+    };
+    window.grabWindow();
+    QPointer<QQuickItem> retained = marker(0);
+    require(retained, "chapter divider missing");
     player.seek(player.duration() / 5); QCoreApplication::processEvents();
     int seeks = 0;
     const auto connection = QObject::connect(&player, &Player::seeked, &window, [&](qint64) { ++seeks; });
@@ -94,9 +111,26 @@ void seekSliderSmoke(QQuickWindow &window, Library &lib, Player &player) {
         QMouseEvent event(type, point, window.mapToGlobal(point), button, buttons, Qt::NoModifier);
         QCoreApplication::sendEvent(&window, &event); QCoreApplication::processEvents();
     };
+    for (const double fraction : {0.25, 0.75}) {
+        mouse(QEvent::MouseMove, fraction, Qt::NoButton, Qt::NoButton);
+        require(waitFor([&] { return tooltip->property("visible").toBool(); })
+            && slider->property("previewChapter").toString() == (fraction < 0.5 ? "Synthetic One" : "Synthetic Two"), "hover preview has wrong chapter");
+    }
+    require(seeks == 0 && changes() == before && !player.playing(), "hover changed playback or saved progress");
+    auto background = slider->property("background").value<QQuickItem *>();
+    int visible = 0;
+    for (int i = 0; i < markers->property("count").toInt(); ++i) {
+        const auto divider = marker(i); require(divider, "chapter divider instance");
+        if (divider->isVisible()) {
+            ++visible;
+            require(qAbs(divider->mapToItem(background, QPointF(divider->width() / 2, 0)).x() - background->width() / 2) < 1, "chapter boundary is misplaced");
+        }
+    }
+    require(visible == 1 && window.grabWindow().save(screenshot + ".timeline.png"), "chapter segmentation rendering");
     mouse(QEvent::MouseButtonPress, 0.2, Qt::LeftButton, Qt::LeftButton);
     for (int i = 3; i <= 7; ++i) mouse(QEvent::MouseMove, i / 10.0, Qt::NoButton, Qt::LeftButton);
     require(slider->property("pressed").toBool() && seeks == 0 && changes() == before, "dragging seek slider repeatedly sought or saved");
+    require(slider->property("previewChapter") == "Synthetic Two" && tooltip->property("visible").toBool(), "drag lost chapter preview");
     const auto preview = slider->property("position").toDouble();
     player.media.setPosition(player.duration() / 4); QCoreApplication::processEvents();
     require(qAbs(slider->property("position").toDouble() - preview) < 0.001, "playback tick moved the seek preview");
@@ -108,9 +142,83 @@ void seekSliderSmoke(QQuickWindow &window, Library &lib, Player &player) {
     QKeyEvent press(QEvent::KeyPress, Qt::Key_Left, Qt::NoModifier), release(QEvent::KeyRelease, Qt::Key_Left, Qt::NoModifier);
     QCoreApplication::sendEvent(&window, &press); QCoreApplication::sendEvent(&window, &release); QCoreApplication::processEvents();
     require(seeks == 2 && changes() == before + 2 && player.position() < mouseTarget, "keyboard seek did not commit once");
+    emit player.changed(); emit player.tick(); QCoreApplication::processEvents();
+    require(retained, "playback/save notification rebuilt chapter markers");
     QObject::disconnect(connection);
-    player.seek(saved); if (focus) focus->forceActiveFocus();
-    fprintf(stdout, "PASS: seek drag previews without decoder/SQL work; release and keyboard commit once; playback ticks preserve preview\n");
+    const QString malformed = R"({"chapters":[{"start_time":"4","tags":{"title":"Last"}},{"start_time":"-1"},{"start_time":"2","tags":{"title":"<b>Middle</b>"}},{"start_time":"2"},{"start_time":"999999"},{"start_time":"0","tags":{"title":"First"}}]})";
+    lib.sql("UPDATE tracks SET probe=? WHERE id=?", {malformed, track}); emit lib.chaptersChanged();
+    require(waitFor([&] { return markers->property("count").toInt() == 3; }), "timeline did not refresh/sort/deduplicate/validate chapter boundaries");
+    mouse(QEvent::MouseMove, 0.5, Qt::NoButton, Qt::NoButton);
+    auto label = tooltip->property("contentItem").value<QQuickItem *>();
+    require(slider->property("previewChapter") == "<b>Middle</b>" && label && label->property("textFormat").toInt() == Qt::PlainText,
+        "chapter title was not treated as plain text");
+    retained = marker(0);
+    const auto details = window.property("selectedBook");
+    window.setProperty("selectedBook", originalBook); QCoreApplication::processEvents();
+    require(retained && markers->property("count").toInt() == 3, "browsing another book changed player chapters");
+    window.setProperty("selectedBook", details);
+    lib.sql("UPDATE tracks SET probe=? WHERE id=?", {probe, track}); emit lib.chaptersChanged();
+    player.open(originalBook, false); player.jump(originalTrack, saved, false);
+    require(waitFor([&] { return player.media.isSeekable() && qAbs(player.position() - saved) < 100; }), "restore player after timeline check");
+    mouse(QEvent::MouseMove, -0.1, Qt::NoButton, Qt::NoButton);
+    require(waitFor([&] { return !tooltip->property("visible").toBool(); }), "chapter tooltip remained after leaving the timeline");
+    if (focus) focus->forceActiveFocus();
+    fprintf(stdout, "PASS: chapter boundaries, hover/drag names, metadata refresh and plain text; stable markers; release/keyboard seek once\n");
+}
+
+void skipKeysSmoke(QQuickWindow &window, Library &lib, Player &player) {
+    const int originalBook = player.bookId(), originalTrack = player.trackId();
+    const auto originalPosition = player.position();
+    auto q = lib.sql("SELECT id FROM books WHERE json_extract(imported,'$.title')='Synthetic keyboard book'");
+    require(q.next(), "keyboard media fixture missing");
+    const int book = q.value(0).toInt();
+    const auto tracks = lib.tracks(book);
+    require(tracks.size() == 2, "keyboard media needs two files");
+    const auto first = tracks[0].toMap(), second = tracks[1].toMap();
+    player.open(book, false); player.jump(first["id"].toInt(), 30000, false);
+    require(waitFor([&] { return player.media.isSeekable() && qAbs(player.position() - 30000) < 100; }), "keyboard media load");
+    auto key = [&](int code, const QString &text, bool repeat = false, Qt::KeyboardModifiers modifiers = Qt::NoModifier) {
+        QKeyEvent press(QEvent::KeyPress, code, modifiers, text, repeat), release(QEvent::KeyRelease, code, modifiers, text, repeat);
+        QCoreApplication::sendEvent(&window, &press); QCoreApplication::sendEvent(&window, &release); QCoreApplication::processEvents();
+    };
+    auto markers = window.findChild<QObject *>("chapterMarkers");
+    auto slider = window.findChild<QQuickItem *>("seekSlider");
+    for (const auto name : {"grid", "volumeSlider", "playButton"}) {
+        window.findChild<QQuickItem *>(name)->forceActiveFocus();
+        key(Qt::Key_BracketRight, "]");
+        const auto target = 60000 - first["duration"].toLongLong();
+        require(waitFor([&] { return player.trackId() == second["id"].toInt() && player.media.isSeekable() && qAbs(player.position() - target) < 100; })
+            && !player.playing(), "] must skip forward 30 seconds across files without starting playback");
+        require(markers->property("count").toInt() == 1 && slider->property("chapterTrack").toInt() == player.trackId(), "timeline retained previous-file chapters");
+        QQuickItem *divider = nullptr;
+        require(QMetaObject::invokeMethod(markers, "itemAt", Q_RETURN_ARG(QQuickItem *, divider), Q_ARG(int, 0))
+            && divider && !divider->isVisible(), "file without embedded chapters has invented boundaries");
+        const auto position = player.position();
+        int seeks = 0;
+        const auto connection = QObject::connect(&player, &Player::seeked, &window, [&](qint64) { ++seeks; });
+        key(Qt::Key_BracketRight, "]", true); key(Qt::Key_BracketLeft, "[", true); key(Qt::Key_BracketRight, "]", false, Qt::ControlModifier);
+        require(seeks == 0 && player.position() == position, "held/modified brackets skipped playback");
+        QObject::disconnect(connection);
+        key(Qt::Key_BracketLeft, "[");
+        require(waitFor([&] { return player.trackId() == first["id"].toInt() && player.media.isSeekable() && qAbs(player.position() - 30000) < 100; }), "[ must skip back 30 seconds across files");
+    }
+    require(QMetaObject::invokeMethod(&window, "openDetails", Q_ARG(QVariant, book)), "details for skip keys");
+    key(Qt::Key_BracketLeft, "["); require(player.position() == 0, "[ did not work in details");
+    key(Qt::Key_BracketRight, "]"); require(qAbs(player.position() - 30000) < 100 && !player.playing(), "] did not work in details");
+    QMetaObject::invokeMethod(&window, "backToGrid");
+    auto search = window.findChild<QQuickItem *>("search"); search->forceActiveFocus();
+    const auto position = player.position();
+    key(Qt::Key_BracketLeft, "["); key(Qt::Key_BracketRight, "]");
+    require(search->property("text") == "[]" && player.position() == position, "brackets did not remain text in search"); search->setProperty("text", "");
+    QMetaObject::invokeMethod(window.findChild<QQuickItem *>("settingsButton"), "clicked");
+    auto headings = window.findChild<QQuickItem *>("seriesHeadingsToggle");
+    require(waitFor([&] { return headings->isVisible(); }), "settings for bracket guard"); headings->forceActiveFocus();
+    key(Qt::Key_BracketLeft, "["); key(Qt::Key_BracketRight, "]");
+    require(player.position() == position, "brackets escaped a modal dialog"); key(Qt::Key_Escape, "");
+    player.open(originalBook, false); player.jump(originalTrack, originalPosition, false);
+    require(waitFor([&] { return player.media.isSeekable() && qAbs(player.position() - originalPosition) < 100; }), "restore player after bracket check");
+    window.findChild<QQuickItem *>("grid")->forceActiveFocus();
+    fprintf(stdout, "PASS: [/] skip exactly 30 seconds across files; details/control focus, repeat/modifier/text/modal guards and chapter refresh\n");
 }
 
 void appearanceSmoke(QQuickWindow &window, Library &lib, Player &player, Theme &theme, const QString &screenshot) {
