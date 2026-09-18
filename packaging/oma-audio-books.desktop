@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=oma-audio-books
+Comment=Local audiobook library and player
+Exec=oma-audio-books
+Icon=oma-audio-books
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=audiobook;MP3;M4B;
+StartupNotify=true

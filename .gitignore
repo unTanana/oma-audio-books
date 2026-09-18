@@ -1,0 +1,7 @@
+/build/
+/stage/
+/dist/
+*.pkg.tar.zst
+/pkg/
+/src/
+/HANDOFF.md

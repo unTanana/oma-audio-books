@@ -1,0 +1,25 @@
+pkgname=oma-audio-books
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Native local audiobook library and player'
+url='https://github.com/unTanana/oma-audio-books'
+arch=('x86_64' 'aarch64')
+license=('GPL-3.0-or-later')
+depends=('qt6-base>=6.10' 'qt6-declarative>=6.10' 'qt6-multimedia>=6.10' 'qt6-wayland>=6.10' 'qt6-svg' 'ffmpeg' 'gcc-libs' 'glibc')
+makedepends=('cmake' 'ninja' 'python')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('@SHA256@')
+
+build() {
+  cmake -S "$srcdir/$pkgname-$pkgver" -B "$srcdir/build" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build "$srcdir/build"
+}
+
+check() {
+  ctest --test-dir "$srcdir/build" --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install "$srcdir/build"
+}
