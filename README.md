@@ -4,6 +4,24 @@ A native, local audiobook library and player for Linux/Omarchy. C++20, Qt Quick,
 SQLite, Qt Multimedia and ffprobe. No account, server, browser or network service.
 MP3 book folders and standalone M4B files remain read-only.
 
+![Audiobook library grouped by series, following the Omarchy theme](https://raw.githubusercontent.com/unTanana/oma-audio-books/main/docs/screenshots/library.png)
+
+*Series view with the persistent player. Screenshots use a preview library and
+illustrative listening progress; audiobooks are not included.*
+
+<details>
+<summary>More screenshots: chapters, playback, and light appearance</summary>
+
+**Book details and chapter navigation**
+
+![Dune book details, chapter navigation, and playback controls](https://raw.githubusercontent.com/unTanana/oma-audio-books/main/docs/screenshots/details.png)
+
+**Light appearance with series headings hidden**
+
+![Light appearance showing a continuous cover grid without series headings](https://raw.githubusercontent.com/unTanana/oma-audio-books/main/docs/screenshots/light-library.png)
+
+</details>
+
 ## Install on Omarchy / Arch Linux
 
 Build and install a local Arch package from source. `makepkg -si` installs the
