@@ -245,5 +245,8 @@ not a limitation of the application.
 - Sleep chapter boundaries are checked against media position updates; sub-second
   overshoot is possible. No sample-accurate stopping is promised.
 
-GPL-3.0-or-later; see LICENSE. Omakade inspired the desktop direction described in
+MIT; see [LICENSE](LICENSE). Omakade inspired the desktop direction described in
 the approved plan; no Omakade source or artwork was copied. The icon is original SVG.
+
+Book cover artwork shown in screenshots is excluded from the MIT license and
+remains the property of its respective rights holders.

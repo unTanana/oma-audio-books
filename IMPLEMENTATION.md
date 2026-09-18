@@ -106,7 +106,7 @@ Borrow the desktop approach, not the game application. Do not import game scanne
 
 On the investigated host, Qt 6 base/declarative/multimedia/Wayland, FFmpeg, CMake, Ninja, and mpv were installed. The current theme palette was readable at `~/.local/state/omarchy/current/theme/colors.toml`. Treat these as discovery results, not portable assumptions; declare actual build/runtime dependencies in packaging.
 
-Omakade code is GPL-3.0-or-later. Any copied portions require attribution and compatible licensing. Do not copy unrelated artwork. Default proposal: license this project GPL-3.0-or-later and document any copied files and their source revision before distribution.
+This project is licensed under MIT. Omakade inspired the desktop direction; no Omakade source or artwork was copied.
 
 ## 3. First-version scope
 

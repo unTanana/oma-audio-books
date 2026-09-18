@@ -4,7 +4,7 @@ pkgrel=1
 pkgdesc='Native local audiobook library and player'
 url='https://github.com/unTanana/oma-audio-books'
 arch=('x86_64' 'aarch64')
-license=('GPL-3.0-or-later')
+license=('MIT')
 depends=('qt6-base>=6.10' 'qt6-declarative>=6.10' 'qt6-multimedia>=6.10' 'qt6-wayland>=6.10' 'qt6-svg' 'ffmpeg' 'gcc-libs' 'glibc')
 makedepends=('cmake' 'ninja' 'python')
 source=("$pkgname-$pkgver.tar.gz")
