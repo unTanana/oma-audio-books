@@ -15,6 +15,11 @@ See README.md for installation and use.
 - Headless checks explicitly select Qt's offscreen platform theme, avoiding
   desktop portal activation in a Flatpak build. Theme regressions cover host
   state and config palettes with synthetic files.
+- The single-instance focus socket lives in the user runtime directory (the
+  app's shared runtime subdirectory in Flatpak), keyed by the catalog path.
+  Long data-directory paths no longer exceed the Unix socket path limit. The
+  integration check launches a second process with a deliberately long catalog
+  path and verifies handoff while the first instance remains running.
 
 ## Verified implementation and finish pass (2026-09-17)
 

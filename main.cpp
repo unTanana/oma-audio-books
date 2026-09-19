@@ -13,6 +13,7 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QStandardPaths>
+#include <QCryptographicHash>
 #include <QDBusConnection>
 #include <cstdio>
 
@@ -77,7 +78,10 @@ int main(int argc, char **argv) {
             else require(within(QDir::cleanPath(args.value(2)), base), "UI smoke screenshot must be temporary");
         }
         if (!QDir().mkpath(data)) throw std::runtime_error("Cannot create application data directory");
-        const auto endpoint = data + "/instance.sock";
+        const auto runtime = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)
+            + (qEnvironmentVariableIsSet("FLATPAK_ID") ? "/app/" + qEnvironmentVariable("FLATPAK_ID") : QString());
+        if (!QDir().mkpath(runtime)) throw std::runtime_error("Cannot create application runtime directory");
+        const auto endpoint = runtime + "/oma-" + QCryptographicHash::hash(data.toUtf8(), QCryptographicHash::Sha256).toHex().left(16) + ".sock";
         QLockFile lock(data + "/instance.lock");
         if (!lock.tryLock(0)) {
             QLocalSocket socket;

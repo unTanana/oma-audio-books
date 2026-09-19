@@ -9,14 +9,15 @@ import sqlite3
 import sys
 import shutil
 import tempfile
+import time
 
 
 def run(*args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
 
-with tempfile.TemporaryDirectory(prefix="oma-audio-books-synthetic-") as tmp:
-    base = Path(tmp)
+with tempfile.TemporaryDirectory(prefix="oma-audio-books-synthetic-") as tmp, tempfile.TemporaryDirectory(prefix="oma-run-") as runtime:
+    base = Path(tmp) / ("long-catalog-path-" * 5)
     library = base / "SYNTHETIC library"
     book = library / "Synthetic MP3 book"
     book.mkdir(parents=True)
@@ -43,7 +44,7 @@ with tempfile.TemporaryDirectory(prefix="oma-audio-books-synthetic-") as tmp:
                XDG_CACHE_HOME=str(base / "cache"), QT_QPA_PLATFORM="offscreen", QT_MEDIA_BACKEND="ffmpeg",
                QT_QPA_PLATFORMTHEME="offscreen", QT_NO_XDG_DESKTOP_PORTAL="1", QT_QUICK_CONTROLS_STYLE="Basic", OMA_HEADLESS="1",
                OMA_SMOKE_BASE=str(base), XDG_STATE_HOME=str(base / "state"), QT_QUICK_BACKEND="software",
-               HOST_XDG_STATE_HOME=str(base / "state"), HOST_XDG_CONFIG_HOME=str(base / "config"))
+               HOST_XDG_STATE_HOME=str(base / "state"), HOST_XDG_CONFIG_HOME=str(base / "config"), XDG_RUNTIME_DIR=runtime)
     executable = str(Path(sys.argv[1] if len(sys.argv) > 1 else "build/oma-audio-books").resolve())
     rejected_env = dict(env, XDG_DATA_HOME=str(base / "rejected-data"))
     rejected_env.pop("OMA_SMOKE_BASE")
@@ -104,3 +105,20 @@ with tempfile.TemporaryDirectory(prefix="oma-audio-books-synthetic-") as tmp:
                     shutil.copy(path, out / path.name.removeprefix("ui.png."))
         assert f"seriesHeadings={shown}" in (base / "config/oma-audio-books/oma-audio-books.conf").read_text().splitlines(), "heading visibility not persisted across restarts"
     assert "sort=4" in (base / "config/oma-audio-books/oma-audio-books.conf").read_text().splitlines(), "Series preference not persisted"
+    first = subprocess.Popen([executable], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.monotonic() + 10
+        lock = database.with_name("instance.lock")
+        while not lock.exists() and first.poll() is None and time.monotonic() < deadline:
+            time.sleep(.05)
+        assert lock.exists() and first.poll() is None, "first instance failed to start"
+        while time.monotonic() < deadline:
+            second = subprocess.run([executable], env=env, capture_output=True, timeout=5)
+            if second.returncode == 0:
+                break
+            time.sleep(.1)
+        assert second.returncode == 0 and first.poll() is None, "second-instance focus handoff failed with a long catalog path"
+        print("PASS: second launch hands off to the running instance with a long catalog path")
+    finally:
+        first.terminate()
+        first.wait(timeout=10)
