@@ -42,6 +42,31 @@ Add your own audiobook folder in Settings. No books, account files, personal
 catalog, or desktop configuration are included. The app reads your Omarchy theme
 and uses your own XDG directories for its library and preferences.
 
+### Install with an AI agent
+
+Paste this into your coding agent:
+
+```text
+Install oma-audio-books on this Omarchy / Arch Linux machine:
+https://github.com/unTanana/oma-audio-books
+
+Read the repository's README and follow its native Arch package instructions.
+Check for an existing installation first. Reuse a suitable checkout without
+discarding local changes, or clone into my normal development directory.
+Run packaging/package.sh, then makepkg -si from dist as my normal user;
+use sudo only when installing required dependencies or the resulting package.
+Keep the package's test checks enabled and stop if they fail.
+
+Preserve any existing audiobook catalog, listening progress, preferences,
+and original audio files. Do not download books or configure a library for me;
+I will select my folder in Settings. If the app is already playing, leave it
+running and tell me to reopen it when convenient.
+
+Verify the installed executable and desktop launcher. Report the installed
+version, the test results, and how to start the app. Omapak publication is
+pending, so use the native package unless the README says it is available.
+```
+
 ## Build and run
 
 ### Flatpak packaging
