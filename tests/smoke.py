@@ -41,8 +41,9 @@ with tempfile.TemporaryDirectory(prefix="oma-audio-books-synthetic-") as tmp:
     assert len(probe["chapters"]) == 2
     env = dict(os.environ, XDG_DATA_HOME=str(base / "data"), XDG_CONFIG_HOME=str(base / "config"),
                XDG_CACHE_HOME=str(base / "cache"), QT_QPA_PLATFORM="offscreen", QT_MEDIA_BACKEND="ffmpeg",
-               QT_QPA_PLATFORMTHEME="", QT_NO_XDG_DESKTOP_PORTAL="1", QT_QUICK_CONTROLS_STYLE="Basic", OMA_HEADLESS="1",
-               OMA_SMOKE_BASE=str(base), XDG_STATE_HOME=str(base / "state"), QT_QUICK_BACKEND="software")
+               QT_QPA_PLATFORMTHEME="offscreen", QT_NO_XDG_DESKTOP_PORTAL="1", QT_QUICK_CONTROLS_STYLE="Basic", OMA_HEADLESS="1",
+               OMA_SMOKE_BASE=str(base), XDG_STATE_HOME=str(base / "state"), QT_QUICK_BACKEND="software",
+               HOST_XDG_STATE_HOME=str(base / "state"), HOST_XDG_CONFIG_HOME=str(base / "config"))
     executable = str(Path(sys.argv[1] if len(sys.argv) > 1 else "build/oma-audio-books").resolve())
     rejected_env = dict(env, XDG_DATA_HOME=str(base / "rejected-data"))
     rejected_env.pop("OMA_SMOKE_BASE")

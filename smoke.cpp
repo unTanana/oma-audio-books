@@ -627,6 +627,22 @@ int smoke(Library &lib, Player &player, const QStringList &args) {
             palette("background = \"#101010\"\nforeground = \"#fafafa\"\naccent = \"#88aaff\"\n");
             require(waitFor([&] { return theme.background == QColor("#101010"); }), "replaced theme watch");
             palette("invalid theme"); require(waitFor([&] { return theme.background == QColor("#15191e"); }), "invalid theme fallback");
+            const auto flatpakId = qgetenv("FLATPAK_ID"), hostState = qgetenv("HOST_XDG_STATE_HOME"), hostConfig = qgetenv("HOST_XDG_CONFIG_HOME");
+            const auto host = qEnvironmentVariable("OMA_SMOKE_BASE") + "/host-theme";
+            QDir().mkpath(host + "/omarchy/current/theme");
+            QFile hostPalette(host + "/omarchy/current/theme/colors.toml");
+            require(hostPalette.open(QIODevice::WriteOnly), "synthetic host palette");
+            hostPalette.write("background = \"#123456\"\nforeground = \"#ffffff\"\naccent = \"#aabbcc\"\n"); hostPalette.close();
+            qputenv("FLATPAK_ID", "io.github.unTanana.OmaAudioBooks");
+            qputenv("HOST_XDG_STATE_HOME", host.toUtf8()); qputenv("HOST_XDG_CONFIG_HOME", (host + "/missing").toUtf8());
+            theme.reload(); require(theme.background == QColor("#123456"), "Flatpak must read the host Omarchy state palette");
+            qputenv("HOST_XDG_STATE_HOME", (host + "/missing").toUtf8()); qputenv("HOST_XDG_CONFIG_HOME", host.toUtf8());
+            theme.reload(); require(theme.background == QColor("#123456"), "Flatpak host config palette fallback");
+            for (const auto &[name, value] : {std::pair{"FLATPAK_ID", flatpakId}, {"HOST_XDG_STATE_HOME", hostState}, {"HOST_XDG_CONFIG_HOME", hostConfig}})
+                if (value.isNull()) qunsetenv(name); else qputenv(name, value);
+            theme.reload();
+            MprisRoot rootAdaptor(&theme, nullptr);
+            require(rootAdaptor.desktopEntry() == QGuiApplication::desktopFileName(), "MPRIS must identify the installed desktop entry");
             require(lib.book(id)["title"] == snapshot["title"], "override lost during feature checks");
             player.jump(lib.tracks(id).first().toMap()["id"].toInt(), 1800, false);
             require(waitFor([&] { return player.media.isSeekable() && qAbs(player.position() - 1800) < 100; }), "post-relink resume");

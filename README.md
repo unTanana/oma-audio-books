@@ -44,6 +44,26 @@ and uses your own XDG directories for its library and preferences.
 
 ## Build and run
 
+### Flatpak packaging
+
+An [Omapak submission](https://github.com/unTanana/omapak/tree/add-oma-audio-books/apps/io.github.unTanana.oma-audio-books)
+is being prepared under app ID `io.github.unTanana.oma-audio-books`. It is not
+available from the Omapak remote until the submission is accepted and published.
+The manifest builds pinned source with the KDE 6.11 SDK and runs the test suites.
+
+The Flatpak uses the system file picker to grant access to selected audiobook
+folders and cover images. It has no network permission or general home-directory
+access. Read-only Omarchy theme directories support Follow Omarchy; Dark and
+Light work on other desktops. A nonstandard Omarchy state location needs an
+explicit Flatpak filesystem permission for its `omarchy/current` directory.
+
+Flatpak keeps its own library and preferences under
+`~/.var/app/io.github.unTanana.oma-audio-books/`. It does not automatically import
+the native package's catalog or saved progress. Its desktop media controls have
+a separate identity, so the native and Flatpak editions can coexist.
+
+### Native build
+
 Requires Qt **6.10 or later** (base, declarative/Quick Controls, multimedia, Wayland,
 SVG), FFmpeg/ffprobe, CMake, Ninja, a C++20 compiler, and Qt's SQLite driver.
 Python 3 is used only for the integration smoke. The tested host has Qt 6.11.2.

@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
     for (const auto name : {"XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME"})
         qputenv(name, (tmp.path() + '/' + name).toUtf8());
     qputenv("QT_QPA_PLATFORM", "offscreen"); qputenv("QT_QUICK_BACKEND", "software");
-    qputenv("QT_QPA_PLATFORMTHEME", ""); qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1"); qputenv("OMA_HEADLESS", "1");
+    qputenv("QT_QPA_PLATFORMTHEME", "offscreen"); qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1"); qputenv("OMA_HEADLESS", "1");
     QGuiApplication app(argc, argv);
     app.setOrganizationName("oma-audio-books"); app.setApplicationName("performance-check");
     QQuickStyle::setStyle("Basic");

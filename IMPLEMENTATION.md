@@ -4,6 +4,18 @@ Status: first-version implementation complete; remaining human acceptance limits
 are listed below. This document records the implementation scope and verification.
 See README.md for installation and use.
 
+## Flatpak compatibility (2026-09-19)
+
+- Flatpak uses its application ID for the desktop entry and MPRIS service. Native
+  package identities and storage paths remain unchanged. Omarchy palettes use
+  the host XDG config/state locations inside Flatpak, with the existing defaults.
+- The KDE 6.11 runtime exposed a Qt 6.11.1 behavior: pausing an already-ended file
+  could reset its position. Pause now calls the backend only while playing; the
+  existing end-of-file sleep regression covers the fix.
+- Headless checks explicitly select Qt's offscreen platform theme, avoiding
+  desktop portal activation in a Flatpak build. Theme regressions cover host
+  state and config palettes with synthetic files.
+
 ## Verified implementation and finish pass (2026-09-17)
 
 - Release build with Qt 6.11.2 succeeds. The final source integration test passed

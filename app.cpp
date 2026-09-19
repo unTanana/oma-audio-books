@@ -484,7 +484,7 @@ void Player::play() {
     if (media.mediaStatus() == QMediaPlayer::EndOfMedia) seek(0);
     media.play();
 }
-void Player::pause() { autoPlay = false; media.pause(); persist(); }
+void Player::pause() { autoPlay = false; if (playing()) media.pause(); persist(); }
 void Player::toggle() { if (playing()) pause(); else play(); }
 void Player::seek(qint64 offset) {
     if (pending >= 0) pending = qMax<qint64>(0, offset);

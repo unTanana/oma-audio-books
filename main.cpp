@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     app.setOrganizationName("oma-audio-books");
     app.setApplicationName("oma-audio-books");
     app.setApplicationVersion("0.1.0");
-    app.setDesktopFileName("oma-audio-books");
+    app.setDesktopFileName(qEnvironmentVariable("FLATPAK_ID", "oma-audio-books"));
     QQuickStyle::setStyle("Basic");
     const auto args = app.arguments();
     if (args.value(1) == "--media-probe") return mediaProbe(args.mid(2));
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
         new MprisRoot(&busObject, window);
         new MprisPlayer(&busObject, player, library);
         auto bus = QDBusConnection::sessionBus();
-        const bool mpris = bus.registerService("org.mpris.MediaPlayer2.oma_audio_books") && bus.registerObject("/org/mpris/MediaPlayer2", &busObject, QDBusConnection::ExportAdaptors);
+        const bool mpris = bus.registerService("org.mpris.MediaPlayer2." + qEnvironmentVariable("FLATPAK_ID", "oma_audio_books")) && bus.registerObject("/org/mpris/MediaPlayer2", &busObject, QDBusConnection::ExportAdaptors);
         if (!mpris && args.value(1) != "--ui-smoke") library.fail("MPRIS unavailable: cannot register with the desktop session bus.");
         library.refresh();
         if (args.value(1) == "--ui-smoke") {

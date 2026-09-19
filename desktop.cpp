@@ -22,8 +22,10 @@ void Theme::reload() {
     QColor bg = selected == "Light" ? QColor("#f4f2ed") : QColor("#15191e");
     QColor fg = selected == "Light" ? QColor("#20252b") : QColor("#eee9df");
     QColor ac = selected == "Light" ? QColor("#315b86") : QColor("#9abddc");
-    const QString state = qEnvironmentVariable("XDG_STATE_HOME", QDir::homePath() + "/.local/state");
-    const QString config = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+    const bool flatpak = qEnvironmentVariableIsSet("FLATPAK_ID");
+    const QString state = qEnvironmentVariable(flatpak ? "HOST_XDG_STATE_HOME" : "XDG_STATE_HOME", QDir::homePath() + "/.local/state");
+    const QString config = flatpak ? qEnvironmentVariable("HOST_XDG_CONFIG_HOME", QDir::homePath() + "/.config")
+                                  : QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
     QStringList paths{state + "/omarchy/current/theme/colors.toml", config + "/omarchy/current/theme/colors.toml"};
     QStringList watched;
     for (const auto &path : paths) {

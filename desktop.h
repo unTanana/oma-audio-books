@@ -4,6 +4,7 @@
 #include <QDBusAbstractAdaptor>
 #include <QDBusObjectPath>
 #include <QFileSystemWatcher>
+#include <QGuiApplication>
 #include <QWindow>
 
 class Theme : public QObject {
@@ -43,7 +44,7 @@ public:
     bool yes() const { return true; }
     bool no() const { return false; }
     QString identity() const { return "oma-audio-books"; }
-    QString desktopEntry() const { return "oma-audio-books"; }
+    QString desktopEntry() const { return QGuiApplication::desktopFileName(); }
     QStringList empty() const { return {}; }
 public slots:
     void Raise() { if (window) { window->showNormal(); window->raise(); window->requestActivate(); } }
