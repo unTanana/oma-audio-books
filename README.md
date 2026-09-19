@@ -46,8 +46,8 @@ and uses your own XDG directories for its library and preferences.
 
 ### Flatpak packaging
 
-An [Omapak submission](https://github.com/unTanana/omapak/tree/add-oma-audio-books/apps/io.github.unTanana.oma-audio-books)
-is being prepared under app ID `io.github.unTanana.oma-audio-books`. It is not
+The [Omapak submission](https://github.com/outcrop-labs/omapak/pull/164)
+is awaiting review under app ID `io.github.unTanana.oma-audio-books`. It is not
 available from the Omapak remote until the submission is accepted and published.
 The manifest builds pinned source with the KDE 6.11 SDK and runs the test suites.
 
